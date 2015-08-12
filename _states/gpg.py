@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+#
+# vim: set ts=4 sw=4 sts=4 et :
 '''
 :maintainer:    Jason Mehring <nrgaway@gmail.com>
 :maturity:      new
@@ -45,7 +47,7 @@ def _state_action(_action, *varargs, **kwargs):
         status = __salt__[_action](*varargs, **kwargs)
     except (SaltInvocationError, CommandExecutionError), e:
         status = Status(retcode=1, result=False, comment=e.message + '\n')
-    return dict(status)
+    return vars(status)
 
 
 def import_key(*varargs, **kwargs):
