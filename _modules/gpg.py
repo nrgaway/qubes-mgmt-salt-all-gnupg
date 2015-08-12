@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+#
+# vim: set ts=4 sw=4 sts=4 et :
 '''
 gnupg related utilities
 '''
@@ -42,18 +44,15 @@ def __virtual__():
 class _GPGBase(_ModuleBase):
     '''Overrides.
     '''
-    def __init__(self, *varargs, **kwargs):
+    def __init__(self, __virtualname__, *varargs, **kwargs):
         '''
         '''
-        frame = stack()[1][0]
-        self.__info__ = getargvalues(frame)._asdict()
-
         if not hasattr(module_utils, '__opts__'):
             module_utils.__opts__ = __opts__
         if not hasattr(module_utils, '__salt__'):
             module_utils.__salt__ = __salt__
 
-        super(_GPGBase, self).__init__(*varargs, **kwargs)
+        super(_GPGBase, self).__init__(__virtualname__, *varargs, **kwargs)
 
 
 def _get_path(filename, pillar=False):
@@ -91,9 +90,41 @@ def _get_data(filename):
     except IOError, error:
         raise CommandExecutionError('Error reading: {0}. {1}'.format(filename,  error))
 
+def _import(user=None, text=None, filename=None):
+    '''
+    salt.module.gpg.import_key is broken, so implement it here for now
+    '''
+    ret = {
+       'result': False,
+       'message': 'Unable to import key.'
+     }
 
-@_function_alias('import_key')
-class _Import_key(_GPGBase):
+    gnupg = _gpg._create_gpg(user)
+
+    if not text and not filename:
+        raise SaltInvocationError('filename or text must be passed.')
+
+    if filename:
+        try:
+            with salt.utils.flopen(filename, 'rb') as _fp:
+                lines = _fp.readlines()
+                text = ''.join(lines)
+        except IOError:
+            raise SaltInvocationError('filename does not exist.')
+
+    imported_data = gnupg.import_keys(text)
+    log.debug('imported_data {0}'.format(imported_data.__dict__.keys()))
+    log.debug('imported_data {0}'.format(imported_data.counts))
+
+    results = imported_data.results[-1]
+    if results.get('fingerprint', None) and 'ok' in results:
+        ret['result'] = True
+
+    ret['message'] = results.get('text', imported_data.summary())
+    ret['stdout'] = imported_data.stderr
+    return ret
+
+def import_key(*varargs, **kwargs):
     '''
     Import a key from text or file
 
@@ -122,108 +153,54 @@ class _Import_key(_GPGBase):
 
         qubesctl gpg.import_key contents-piller='gpg:gpgkeys'
     '''
-    def __init__(self, *varargs, **kwargs):
-        '''
-        '''
-        super(_Import_key, self).__init__(*varargs, **kwargs)
-        self.args.contents_pillar = _tostring(self.args.contents_pillar) if self.args.contents_pillar else self.args.contents_pillar
+    base = _GPGBase('gpg.import_key', **kwargs)
+    base.parser.add_argument('name', nargs='?', help=argparse.SUPPRESS)
+    group = base.parser.add_mutually_exclusive_group()
+    group.add_argument('source', nargs='?',
+        help='The filename containing the key to import')
+    group.add_argument('--contents', nargs=1, metavar='TEXT',
+        help='The text containing import key to import')
+    group.add_argument('--contents-pillar', '--contents_pillar', type=_tostring, nargs=1, metavar='PILLAR-ID',
+        help='The pillar id containing import key to import')
+    base.parser.add_argument('--user', nargs=1, default='salt',
+        help="Which user's keychain to access, defaults to user Salt is \
+        running as.  Passing the user as 'salt' will set the GPG home \
+        directory to /etc/salt/gpgkeys.")
+    args = base.parse_args(*varargs, **kwargs)
+    base.args.contents_pillar = _tostring(base.args.contents_pillar) if base.args.contents_pillar else base.args.contents_pillar
 
-    @classmethod
-    def parser_arguments(cls, parser):
-        # 'name'
-        parser.add_argument('name', nargs='?', help=argparse.SUPPRESS)
-        #    help='The name id of state object')
 
-        # Mutually exclusive group (source, contents, contents-pillar)
-        group = parser.add_mutually_exclusive_group()
-
-        # 'source'
-        group.add_argument('source', nargs='?',
-            help='The filename containing the key to import')
-
-        # 'contents'
-        group.add_argument('--contents', nargs=1, metavar='TEXT',
-            help='The text containing import key to import')
-
-        # 'contents-pillar' + 'contents_pillar'
-        group.add_argument('--contents-pillar', '--contents_pillar', type=_tostring, nargs=1, metavar='PILLAR-ID',
-            help='The pillar id containing import key to import')
-
-        # 'user'
-        parser.add_argument('--user', nargs=1, default='salt',
-            help="Which user's keychain to access, defaults to user Salt is \
-            running as.  Passing the user as 'salt' will set the GPG home \
-            directory to /etc/salt/gpgkeys.")
-
-    def import_key(self, user=None, text=None, filename=None):
-        '''
-        salt.module.gpg.import_key is broken, so implement it here for now
-        '''
-        ret = {
-           'result': False,
-           'message': 'Unable to import key.'
-         }
-
-        gnupg = _gpg._create_gpg(user)
-
-        if not text and not filename:
-            raise SaltInvocationError('filename or text must be passed.')
-
-        if filename:
-            try:
-                with salt.utils.flopen(filename, 'rb') as _fp:
-                    lines = _fp.readlines()
-                    text = ''.join(lines)
-            except IOError:
-                raise SaltInvocationError('filename does not exist.')
-
-        imported_data = gnupg.import_keys(text)
-        log.debug('imported_data {0}'.format(imported_data.__dict__.keys()))
-        log.debug('imported_data {0}'.format(imported_data.counts))
-
-        results = imported_data.results[-1]
-        if results.get('fingerprint', None) and 'ok' in results:
-            ret['result'] = True
-
-        ret['message'] = results.get('text', imported_data.summary())
-        ret['stdout'] = imported_data.stderr
-        return ret
-
-    def __call__(self):
-        args = self.args
-        keywords = {'user': args.user,}
-
-        status = Status()
-        if args.source:
-            keywords['filename'] = _get_path(args.source)
-            if not keywords['filename']:
-                status.recode = 1
-                status.message = 'Invalid filename source {0}'.format(args.source)
-        elif args.contents:
-            keywords['text'] = args.contents
-        elif args.contents_pillar:
-            keywords['text'] = __pillar__.get(args.contents_pillar, None)
-            if not keywords['text']:
-                status.recode = 1
-                status.message = 'Invalid pillar id source {0}'.format(args.contents_pillar)
-        else:
+    keywords = {'user': args.user,}
+    status = Status()
+    if args.source:
+        keywords['filename'] = _get_path(args.source)
+        if not keywords['filename']:
             status.recode = 1
-            status.message = 'Invalid options!'
+            status.message = 'Invalid filename source {0}'.format(args.source)
+    elif args.contents:
+        keywords['text'] = args.contents
+    elif args.contents_pillar:
+        keywords['text'] = __pillar__.get(args.contents_pillar, None)
+        if not keywords['text']:
+            status.recode = 1
+            status.message = 'Invalid pillar id source {0}'.format(args.contents_pillar)
+    else:
+        status.recode = 1
+        status.message = 'Invalid options!'
 
-        if status.failed():
-            self.save_status(status)
-        if __opts__['test']:
-            self.save_status(message='Key will be imported')
-        else:
-            status = Status(**self.import_key(**keywords))
-            self.save_status(status)
+    if status.failed():
+        base.save_status(status)
+    if __opts__['test']:
+        base.save_status(message='Key will be imported')
+    else:
+        status = Status(**_import(**keywords))
+        base.save_status(status)
 
-        # Returns the status 'data' dictionary
-        return self.status()
+    # Returns the status 'data' dictionary
+    return base.status()
 
 
-@_function_alias('verify')
-class _Verify(_GPGBase):
+def verify(name, *varargs, **kwargs):
     '''
     Verify a message or file
 
@@ -250,76 +227,57 @@ class _Verify(_GPGBase):
         qubesctl gpg.verify <source|key-content> [key-data] [user=]
 
     '''
-    def __init__(self, name, *varargs, **kwargs):
-        '''
-        '''
-        super(_Verify, self).__init__(name, *varargs, **kwargs)
+    base = _GPGBase('gpg.verify', **kwargs)
+    base.parser.add_argument('name',
+        help='The name id of state object')
+    group = base.parser.add_mutually_exclusive_group()
+    group.add_argument('source', nargs='?',
+        help='The filename containing the key to import')
+    group.add_argument('--key-contents', '--key_contents', nargs=1,
+        help='The text containing import key to import')
+    base.parser.add_argument('--data-source', '--data_source', nargs='?',
+        help='Source file data path to verify (source)')
+    base.parser.add_argument('--user', nargs=1, default='salt',
+        help="Which user's keychain to access, defaults to user Salt is \
+        running as.  Passing the user as 'salt' will set the GPG home \
+        directory to /etc/salt/gpgkeys.")
 
-    @classmethod
-    def parser_arguments(cls, parser):
-        # 'name'
-        parser.add_argument('name',
-            help='The name id of state object')
+    args = base.parse_args(name, *varargs, **kwargs)
+    gnupg = _gpg._create_gpg(args.user)
+    status = Status()
 
-        # Mutually exclusive group (source, contents)
-        group = parser.add_mutually_exclusive_group()
+    # Key source validation
+    key_source = None
+    if args.source:
+        key_source = _get_path(args.source)
+        if not key_source:
+            status.recode = 1
+            status.message = 'GPG validation failed: invalid key-source {0}'.format(key_source)
+    elif args.key_contents:
+        key_source = args.key_contents
+    else:
+        key_source = _get_path(args.name)
 
-        # 'source'
-        group.add_argument('source', nargs='?',
-            help='The filename containing the key to import')
+    # Data source validation
+    data_source = _get_path(args.data_source)
+    if not data_source:
+        data_source, ext = os.path.splitext(key_source)
 
-        # 'contents'
-        group.add_argument('--key-contents', '--key_contents', nargs=1,
-            help='The text containing import key to import')
+    if not os.path.exists(data_source):
+        status.retcode = 1
+        message = 'GPG validation failed: invalid data-source {0}'.format(data_source)
+        base.save_status(status, message=message)
+        return base.status()
 
-        # 'data'
-        parser.add_argument('--data-source', '--data_source', nargs='?',
-            help='Source file data path to verify (source)')
+    # GPG verify
+    status = Status()
+    data = gnupg.verify_data(key_source, _get_data(data_source))
 
-        # 'user'
-        parser.add_argument('--user', nargs=1, default='salt',
-            help="Which user's keychain to access, defaults to user Salt is \
-            running as.  Passing the user as 'salt' will set the GPG home \
-            directory to /etc/salt/gpgkeys.")
+    if not data.valid:
+        raise CommandExecutionError(data.stderr)
 
-    def __call__(self):
-        args = self.args
-        gnupg = _gpg._create_gpg(args.user)
+    status.stdout = data.stderr
+    base.save_status(status)
 
-        status = Status()
-
-        # Key source validation
-        key_source = None
-        if args.source:
-            key_source = _get_path(args.source)
-            if not key_source:
-                status.recode = 1
-                status.message = 'GPG validation failed: invalid key-source {0}'.format(key_source)
-        elif args.key_contents:
-            key_source = args.key_contents
-        else:
-            key_source = _get_path(args.name)
-
-        # Data source validation
-        data_source = _get_path(args.data_source)
-        if not data_source:
-            data_source, ext = os.path.splitext(key_source)
-
-        if not os.path.exists(data_source):
-            status.retcode = 1
-            message = 'GPG validation failed: invalid data-source {0}'.format(data_source)
-            self.save_status(status, message=message)
-            return self.status()
-
-        # GPG verify
-        status = Status()
-        data = gnupg.verify_data(key_source, _get_data(data_source))
-
-        if not data.valid:
-            raise CommandExecutionError(data.stderr)
-
-        status.stdout = data.stderr
-        self.save_status(status)
-
-        # Returns the status 'data' dictionary
-        return self.status()
+    # Returns the status 'data' dictionary
+    return base.status()
