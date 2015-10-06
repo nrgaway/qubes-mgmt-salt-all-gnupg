@@ -6,6 +6,7 @@ gnupg related utilities
 '''
 
 # Import python libs
+from __future__ import absolute_import
 import os
 import argparse
 import logging
@@ -18,25 +19,33 @@ from salt.exceptions import (
     CommandExecutionError, SaltInvocationError
 )
 
+# Third party libs
+HAS_LIBS = False
+try:
+    import gnupg as _gnupg
+    HAS_LIBS = True
+except ImportError:
+    pass
+
 # Salt + Qubes libs
 import module_utils
 from qubes_utils import Status
 from qubes_utils import function_alias as _function_alias
-from qubes_utils import tostring as _tostring
+from qubes_utils import coerce_to_string as _coerce_to_string
 from module_utils import ModuleBase as _ModuleBase
 
 # Set up logging
 log = logging.getLogger(__name__)
 
 # Define the module's virtual name
-__virtualname__ = 'gpg'
+__virtualname__ = 'gnupg'
 
 
 def __virtual__():
     '''
-    Confine this module to gpg enabled systems
+    Makes sure that python-gnupg and gpg are available.
     '''
-    if _gpg.__virtual__:
+    if salt.utils.which('gpg') and HAS_LIBS:
         return __virtualname__
     return False
 
@@ -146,12 +155,12 @@ def import_key(*varargs, **kwargs):
 
     .. code-block:: bash
 
-        qubesctl gpg.import_key contents='-----BEGIN PGP PUBLIC KEY BLOCK-----
+        qubesctl gnupg.import_key contents='-----BEGIN PGP PUBLIC KEY BLOCK-----
         ... -----END PGP PUBLIC KEY BLOCK-----'
 
-        qubesctl gpg.import_key source='/path/to/public-key-file'
+        qubesctl gnupg.import_key source='/path/to/public-key-file'
 
-        qubesctl gpg.import_key contents-piller='gpg:gpgkeys'
+        qubesctl gnupg.import_key contents-piller='gnupg:gpgkeys'
     '''
     base = _GPGBase('gpg.import_key', **kwargs)
     base.parser.add_argument('name', nargs='?', help=argparse.SUPPRESS)
@@ -160,14 +169,14 @@ def import_key(*varargs, **kwargs):
         help='The filename containing the key to import')
     group.add_argument('--contents', nargs=1, metavar='TEXT',
         help='The text containing import key to import')
-    group.add_argument('--contents-pillar', '--contents_pillar', type=_tostring, nargs=1, metavar='PILLAR-ID',
+    group.add_argument('--contents-pillar', '--contents_pillar', type=_coerce_to_string, nargs=1, metavar='PILLAR-ID',
         help='The pillar id containing import key to import')
     base.parser.add_argument('--user', nargs=1, default='salt',
         help="Which user's keychain to access, defaults to user Salt is \
         running as.  Passing the user as 'salt' will set the GPG home \
         directory to /etc/salt/gpgkeys.")
     args = base.parse_args(*varargs, **kwargs)
-    base.args.contents_pillar = _tostring(base.args.contents_pillar) if base.args.contents_pillar else base.args.contents_pillar
+    base.args.contents_pillar = _coerce_to_string(base.args.contents_pillar) if base.args.contents_pillar else base.args.contents_pillar
 
 
     keywords = {'user': args.user,}
@@ -222,9 +231,9 @@ def verify(name, *varargs, **kwargs):
 
     .. code-block:: bash
 
-        qubesctl gpg.verify source='/path/to/important.file.asc'
+        qubesctl gnupg.verify source='/path/to/important.file.asc'
 
-        qubesctl gpg.verify <source|key-content> [key-data] [user=]
+        qubesctl gnupg.verify <source|key-content> [key-data] [user=]
 
     '''
     base = _GPGBase('gpg.verify', **kwargs)
