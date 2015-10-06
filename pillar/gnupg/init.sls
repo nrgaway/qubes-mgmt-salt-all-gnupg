@@ -2,15 +2,13 @@
 # vim: set syntax=yaml ts=2 sw=2 sts=2 et :
 
 ###
-#
-#  'gnupg' Pillar
+#  'gpg' Pillar
 #  ==============
 #
 #  - Contains gnupg keys to import
-#
 ###
 
-gnupg-nrgaway-key: |
+gpg-nrgaway-key: |
   -----BEGIN PGP PUBLIC KEY BLOCK-----
   Version: GnuPG v1
 
