@@ -1,6 +1,6 @@
-===========
-gpg Formula
-===========
+=============
+gnupg Formula
+=============
 
 Includes a custom gpg state, module and renderer.  The custom state and module provides the ability to import or verify
 gpg keys, while the custom renderer will fail to render a .sls state file if the statefile contains the #!verify shebang and the statefile fails verification do to any reason such as missing key, missing detached signature.
@@ -11,8 +11,8 @@ Available states
 .. contents::
     :local:
 
-``gpg.import_key``
-------------
+``gnupg.import_key``
+--------------------
 
 Import a key from text or file
 
@@ -34,15 +34,15 @@ CLI Example:
 
 .. code-block:: bash
 
-    qubesctl gpg.import_key contents='-----BEGIN PGP PUBLIC KEY BLOCK-----
+    qubesctl gnupg.import_key contents='-----BEGIN PGP PUBLIC KEY BLOCK-----
     ... -----END PGP PUBLIC KEY BLOCK-----'
 
-    qubesctl gpg.import_key source='/path/to/public-key-file'
+    qubesctl gnupg.import_key source='/path/to/public-key-file'
 
-    qubesctl gpg.import_key contents-piller='gpg:gpgkeys'
+    qubesctl gnupg.import_key contents-piller='gnupg:gpgkeys'
 
 
-``gpg.verify``
+``gnupg.verify``
 ------------
 
 Verify a message or file
@@ -65,9 +65,9 @@ CLI Example:
 
 .. code-block:: bash
 
-    qubesctl gpg.verify source='/path/to/important.file.asc'
+    qubesctl gnupg.verify source='/path/to/important.file.asc'
 
-    qubesctl gpg.verify <source|key-content> [key-data] [user=]
+    qubesctl gnupg.verify <source|key-content> [key-data] [user=]
 
 
 ``custom gpg renderer``

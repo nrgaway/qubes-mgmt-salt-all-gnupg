@@ -19,6 +19,8 @@ your master, run:
     renderer: verify | jinja | yaml
 '''
 
+# Import python libs
+from __future__ import absolute_import
 import os
 import salt.utils
 try:
@@ -30,6 +32,7 @@ except ImportError:
     HAS_GPG = False
 import logging
 
+# Import salt libs
 from salt.exceptions import (SaltRenderError, CommandExecutionError)
 
 log = logging.getLogger(__name__)
@@ -57,7 +60,7 @@ def render(data, saltenv='base', sls='', argline='', **kwargs):
         client = salt.fileclient.get_file_client(__opts__)
         state = client.get_state(sls, saltenv)
         signature_file = client.cache_file(state['source'] + '.asc', saltenv)
-        verify = __salt__['gpg.verify'](signature_file)
+        verify = __salt__['gnupg.verify'](signature_file)
         return data
     except CommandExecutionError, error:
         raise SaltRenderError('GPG validation failed: {0}'.format(error))

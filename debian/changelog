@@ -1,4 +1,4 @@
-qubes-mgmt-salt-base-gpg (3.0.0-1) unstable; urgency=low
+qubes-mgmt-salt-base-gnupg (3.0.0-1) unstable; urgency=low
 
   * Initial Release.
 
