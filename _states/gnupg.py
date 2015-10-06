@@ -13,7 +13,7 @@ Implementation of gpg utilities
 .. code-block:: yaml
 
     vim.sls.asc:
-      gpg.verify
+      gnupg.verify
         - source: salt://vim/init.sls.asc
 '''
 
@@ -30,14 +30,17 @@ from qubes_utils import Status
 
 log = logging.getLogger(__name__)
 
+__virtualname__ = 'gnupg'
+
 
 def __virtual__():
     '''
     Only make these states available if a qvm provider has been detected or
     assigned for this minion
     '''
-    # XXX: May need better conditional here as it may pick up the salt gpg module
-    return 'gpg.import_key' in __salt__
+    if  'gnupg.import_key' in __salt__:
+        return __virtualname__
+    return False
 
 
 def _state_action(_action, *varargs, **kwargs):
@@ -55,11 +58,11 @@ def import_key(*varargs, **kwargs):
     Imports a gpg key into Salt's home directory to be able to verify signed
     state files.
     '''
-    return _state_action('gpg.import_key', *varargs, **kwargs)
+    return _state_action('gnupg.import_key', *varargs, **kwargs)
 
 
 def verify(*varargs, **kwargs):
     '''
     Verify a gpg key.
     '''
-    return _state_action('gpg.verify', *varargs, **kwargs)
+    return _state_action('gnupg.verify', *varargs, **kwargs)
