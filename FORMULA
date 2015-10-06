@@ -1,0 +1,29 @@
+# vim: set syntax=yaml ts=2 sw=2 sts=2 et :
+
+name:          gnupg-formula
+top_level_dir: gnupg
+saltenv:       base
+version:       3.0.0
+release:       1
+os:            RedHat, Debian, Ubuntu, Suse, FreeBSD
+os_family:     RedHat, Debian, Suse, FreeBSD
+summary:       Custom gpg state, module and renderer
+description: |
+  The custom state and module provides the ability to import or verify gpg keys,
+  while the custom renderer will fail to render a .sls state file if the state
+  file contains the \#!verify shebang and the statefile fails verification do to
+  any reason such as missing key, missing detached signature.
+
+state-tops:
+  base:
+    enable:
+      - gnupg
+  test:
+    disable:
+      - gnupg.test-gpg-renderer
+      - gnupg.tests
+  
+pillar-tops:
+  base:
+    enable:
+      - gnupg
