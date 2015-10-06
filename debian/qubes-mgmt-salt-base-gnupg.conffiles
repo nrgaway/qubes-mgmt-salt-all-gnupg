@@ -1,0 +1,2 @@
+/srv/pillar/base/gnupg/init.sls
+/srv/pillar/base/gnupg/init.top
