@@ -11,6 +11,7 @@ Section: admin
 Architecture: all
 Depends:
     qubes-mgmt-salt-base,
+    qubes-mgmt-salt-all-yamlscript-renderer,
     python-gnupg
 Description: Custom gpg state, module and renderer.
  The custom state and module provides the ability to import or verify gpg keys,
