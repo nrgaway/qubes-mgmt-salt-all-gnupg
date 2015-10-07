@@ -16,7 +16,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-PACKAGE_NAME     := qubes-mgmt-salt-base-gnupg
+PACKAGE_NAME     := qubes-mgmt-salt-all-gnupg
 FORMULA_NAME     := $(shell grep 'name' FORMULA|head -n 1|cut -f 2 -d :|xargs)
 STATE_NAME       := $(shell grep 'top_level_dir' FORMULA|head -n 1|cut -f 2 -d :|xargs)
 SALTENV          := $(shell grep 'saltenv' FORMULA|head -n 1|cut -f 2 -d :|xargs)
