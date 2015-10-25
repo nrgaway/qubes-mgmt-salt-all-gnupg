@@ -2,8 +2,11 @@
 gnupg Formula
 =============
 
-Includes a custom gpg state, module and renderer.  The custom state and module provides the ability to import or verify
-gpg keys, while the custom renderer will fail to render a .sls state file if the statefile contains the #!verify shebang and the statefile fails verification do to any reason such as missing key, missing detached signature.
+Includes a custom gpg state, module and renderer.  The custom state and module
+provides the ability to import or verify gpg keys, while the custom renderer
+will fail to render a .sls state file if the state file contains the #!verify
+shebang and the state file fails verification do to any reason such as missing
+key, missing detached signature.
 
 Available states
 ================
@@ -18,8 +21,8 @@ Import a key from text or file
 
 user
     Which user's keychain to access, defaults to user Salt is running as.
-    Passing the user as 'salt' will set the GPG home directory to
-    /etc/salt/gpgkeys.
+    Passing the user as ``salt`` will set the GPG home directory to
+    ``/etc/salt/gpgkeys``.
 
 contents
     The text containing import key to import.
@@ -43,7 +46,7 @@ CLI Example:
 
 
 ``gnupg.verify``
-------------
+----------------
 
 Verify a message or file
 
@@ -58,8 +61,8 @@ data-source
 
 user
     Which user's keychain to access, defaults to user Salt is running as.
-    Passing the user as 'salt' will set the GPG home directory to
-    /etc/salt/gpgkeys.
+    Passing the user as ``salt`` will set the GPG home directory to
+    ``/etc/salt/gpgkeys``.
 
 CLI Example:
 
@@ -87,4 +90,3 @@ your master, run:
 .. code-block:: yaml
 
     sls shebang: verify | jinja | yaml
-
