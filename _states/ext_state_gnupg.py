@@ -20,13 +20,11 @@ Implementation of gpg utilities
 # Import python libs
 import logging
 
-# Salt libs
-from salt.exceptions import (
-    CommandExecutionError, SaltInvocationError
-)
+# Import salt libs
+from salt.exceptions import (CommandExecutionError, SaltInvocationError)
 
-# Salt + Qubes libs
-from qubes_utils import Status
+# Import custom libs
+from qubes_utils import Status  # pylint: disable=F0401
 
 log = logging.getLogger(__name__)
 
@@ -38,18 +36,19 @@ def __virtual__():
     Only make these states available if a qvm provider has been detected or
     assigned for this minion
     '''
-    if  'gnupg.import_key' in __salt__:
+    if 'gnupg.import_key' in __salt__:
         return __virtualname__
     return False
 
 
 def _state_action(_action, *varargs, **kwargs):
     '''
+    State helper function to call requested salt modules.
     '''
     try:
         status = __salt__[_action](*varargs, **kwargs)
-    except (SaltInvocationError, CommandExecutionError), e:
-        status = Status(retcode=1, result=False, comment=e.message + '\n')
+    except (SaltInvocationError, CommandExecutionError), err:
+        status = Status(retcode=1, result=False, comment=err.message + '\n')
     return vars(status)
 
 
