@@ -18,15 +18,14 @@ Implementation of gpg utilities
 '''
 
 # Import python libs
+from __future__ import absolute_import
 import logging
 
-# Salt libs
-from salt.exceptions import (
-    CommandExecutionError, SaltInvocationError
-)
+# Import salt libs
+from salt.exceptions import (CommandExecutionError, SaltInvocationError)
 
-# Salt + Qubes libs
-from qubes_utils import Status
+# Import custom libs
+from qubes_utils import Status  # pylint: disable=F0401
 
 log = logging.getLogger(__name__)
 
@@ -35,28 +34,30 @@ __virtualname__ = 'gnupg'
 
 def __virtual__():
     '''
-    Only make these states available if a qvm provider has been detected or
-    assigned for this minion
+    Return virtual name if gnupg module is also available.
     '''
-    if  'gnupg.import_key' in __salt__:
+    if 'gnupg.import_key' in __salt__:
         return __virtualname__
     return False
 
 
 def _state_action(_action, *varargs, **kwargs):
     '''
+    State helper function to call requested salt modules.
     '''
     try:
         status = __salt__[_action](*varargs, **kwargs)
-    except (SaltInvocationError, CommandExecutionError), e:
-        status = Status(retcode=1, result=False, comment=e.message + '\n')
+    except (SaltInvocationError, CommandExecutionError) as err:
+        status = Status(retcode=1, result=False, comment=err.message + '\n')
     return vars(status)
 
 
 def import_key(*varargs, **kwargs):
     '''
-    Imports a gpg key into Salt's home directory to be able to verify signed
-    state files.
+    Import a gpg key.
+
+    Gpg keys are imported into Salt's configuration directory usually located in
+    `/etc/salt/gpgkeys` which are then used to verify signed state files.
     '''
     return _state_action('gnupg.import_key', *varargs, **kwargs)
 
