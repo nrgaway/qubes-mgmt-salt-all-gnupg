@@ -75,7 +75,8 @@ def _get_path(filename, pillar=False):
 
     if filename.startswith('salt://'):
         try:
-            filename, saltenv = filename.split('@')
+            env_splitter = '?saltenv='
+            filename, saltenv = filename.split(env_splitter)
         except ValueError: pass
 
     client = salt.fileclient.get_file_client(__opts__, pillar)
