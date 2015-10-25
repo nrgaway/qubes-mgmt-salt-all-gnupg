@@ -26,9 +26,9 @@ state-tops:
       - gnupg
   test:
     enable:
-      - gnupg.test-gpg-renderer
-      - gnupg.tests
-  
+      - gnupg
+      - gnupg.renderer
+
 pillar-tops:
   base:
     enable:
