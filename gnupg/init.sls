@@ -20,5 +20,5 @@ gnupg:
 
   gnupg.import_key:
     - order: 1
-    # source: /srv/pillar/base/gpg/keys/nrgaway-qubes-signing-key.asc
-    - contents-pillar: gpg-nrgaway-key
+    - source: pillar://gnupg/keys/nrgaway-qubes-signing-key.asc
+    # contents-pillar: gnupg-nrgaway-key
