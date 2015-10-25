@@ -2,7 +2,13 @@
 #
 # vim: set ts=4 sw=4 sts=4 et :
 '''
+:maintainer:    Jason Mehring <nrgaway@gmail.com>
+:maturity:      new
+:depends:       python-gpg
+:platform:      all
+
 Renderer that verifies state and pillar files
+=============================================
 
 This renderer requires the python-gnupg package. Be careful to install the
 ``python-gnupg`` package, not the ``gnupg`` package, or you will get errors.
@@ -21,19 +27,20 @@ your master, run:
 
 # Import python libs
 from __future__ import absolute_import
-import os
+import logging
+
+# Import salt libs
 import salt.utils
+from salt.exceptions import (SaltRenderError, CommandExecutionError)
+
+# Import third party libs
 try:
-    import gnupg
+    import gnupg  # pylint: disable=W0611
     HAS_GPG = True
     if salt.utils.which('gpg') is None:
         HAS_GPG = False
 except ImportError:
     HAS_GPG = False
-import logging
-
-# Import salt libs
-from salt.exceptions import (SaltRenderError, CommandExecutionError)
 
 log = logging.getLogger(__name__)
 
@@ -50,9 +57,9 @@ def __virtual__():
     return False
 
 
-def render(data, saltenv='base', sls='', argline='', **kwargs):
+def render(data, saltenv='base', sls='', argline='', **kwargs):  # pylint: disable=W0613
     '''
-    Verify state ot pillar file using detatched signature file with same
+    Verify state ot pillar file using detached signature file with same
     name as state/pillar file with the additional '.asc' suffix
     '''
     # Verify signed file
@@ -60,7 +67,8 @@ def render(data, saltenv='base', sls='', argline='', **kwargs):
         client = salt.fileclient.get_file_client(__opts__)
         state = client.get_state(sls, saltenv)
         signature_file = client.cache_file(state['source'] + '.asc', saltenv)
-        verify = __salt__['gnupg.verify'](signature_file)
+        __salt__['gnupg.verify'](signature_file)
         return data
+
     except CommandExecutionError, error:
         raise SaltRenderError('GPG validation failed: {0}'.format(error))
